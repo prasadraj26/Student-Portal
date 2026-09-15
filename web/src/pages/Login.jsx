@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase/config";
+import { useNavigate } from "react-router-dom";
 
 function Login() {
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -16,8 +19,7 @@ function Login() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-
-      console.log("Login successful");
+      navigate("/dashboard");
     } catch (error) {
       console.error(error);
       setError("Invalid email or password.");
