@@ -1,5 +1,6 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth, signInAnonymously } from "firebase/auth";
 
 // Same Firebase project as the web teacher app
 const firebaseConfig = {
@@ -13,4 +14,24 @@ const firebaseConfig = {
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 export const db = getFirestore(app);
+export const auth = getAuth(app);
+
+let authPromise = null;
+
+export const ensureAuth = async () => {
+  if (auth.currentUser) {
+    return auth.currentUser;
+  }
+  if (!authPromise) {
+    authPromise = signInAnonymously(auth)
+      .then((res) => res.user)
+      .catch((err) => {
+        authPromise = null;
+        throw err;
+      });
+  }
+  return authPromise;
+};
+
 export default app;
+

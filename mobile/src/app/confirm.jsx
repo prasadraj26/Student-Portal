@@ -5,22 +5,29 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getStudentById } from "../services/studentService";
+import { clearActiveFocus } from "../utils/focusManagement";
 import { colors, radius, spacing } from "../constants/theme";
 
 const STORAGE_KEY = "edu_portal_student_id";
 
 export default function ConfirmScreen() {
   const router = useRouter();
-  const { studentId } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+  const studentId = typeof params.studentId === "string" ? params.studentId : Array.isArray(params.studentId) ? params.studentId[0] : "";
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
+      if (!studentId) {
+        setLoading(false);
+        return;
+      }
       try {
         const s = await getStudentById(studentId);
         setStudent(s);
       } catch (e) {
+        console.error("[Confirm Error]", e);
         Alert.alert("Error", "Failed to load student data.");
       } finally {
         setLoading(false);
@@ -31,14 +38,19 @@ export default function ConfirmScreen() {
 
   const handleConfirm = async () => {
     try {
-      await AsyncStorage.setItem(STORAGE_KEY, studentId);
+      const activeId = student?.studentId || studentId;
+      await AsyncStorage.setItem(STORAGE_KEY, activeId);
+      clearActiveFocus();
       router.replace("/(student)/home");
     } catch (e) {
       Alert.alert("Error", "Failed to save session.");
     }
   };
 
-  const handleBack = () => router.back();
+  const handleBack = () => {
+    clearActiveFocus();
+    router.back();
+  };
 
   if (loading) {
     return (
@@ -50,11 +62,18 @@ export default function ConfirmScreen() {
 
   if (!student) {
     return (
-      <View style={styles.container}>
-        <Text style={{ color: colors.danger, fontSize: 16 }}>Student not found.</Text>
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center", padding: spacing.xl }]}>
+        <Text style={{ color: colors.danger, fontSize: 16, fontWeight: "600", marginBottom: 16 }}>
+          Student data not found.
+        </Text>
+        <TouchableOpacity style={styles.confirmBtn} onPress={handleBack}>
+          <Text style={styles.confirmText}>Go Back</Text>
+        </TouchableOpacity>
       </View>
     );
   }
+
+  const rollNumberFormatted = String(student.rollNumber ?? "").padStart(2, "0");
 
   return (
     <View style={styles.container}>
@@ -67,10 +86,10 @@ export default function ConfirmScreen() {
 
       <View style={styles.card}>
         {[
-          ["Student ID",  student.studentId],
+          ["Student ID",  student.studentId || student.id],
           ["Full Name",   student.name],
-          ["Class",       student.classId],
-          ["Roll Number", String(student.rollNumber).padStart(2, "0")],
+          ["Class",       student.className || student.classId],
+          ["Roll Number", rollNumberFormatted],
         ].map(([label, value]) => (
           <View key={label} style={styles.row}>
             <Text style={styles.rowLabel}>{label}</Text>

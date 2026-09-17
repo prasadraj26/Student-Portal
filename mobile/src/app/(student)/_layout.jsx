@@ -1,5 +1,6 @@
 import { Tabs } from "expo-router";
-import { colors } from "../../constants/theme";
+import * as theme from "../../constants/theme";
+const colors = theme.colors || {};
 
 const TabIcon = ({ name, focused }) => {
   const icons = {

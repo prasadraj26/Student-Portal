@@ -5,7 +5,12 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { getAttemptById } from "../../services/attemptService";
 import { getExamById, getQuestions } from "../../services/examService";
-import { colors, radius, spacing } from "../../constants/theme";
+import { clearActiveFocus } from "../../utils/focusManagement";
+import * as theme from "../../constants/theme";
+
+const colors  = theme.colors  || {};
+const radius  = theme.radius  || {};
+const spacing = theme.spacing || {};
 
 export default function ResultScreen() {
   const router = useRouter();
@@ -29,6 +34,9 @@ export default function ResultScreen() {
       finally { setLoading(false); }
     };
     load();
+    return () => {
+      clearActiveFocus();
+    };
   }, [attemptId]);
 
   if (loading) {
@@ -104,7 +112,7 @@ export default function ResultScreen() {
         </Text>
       </TouchableOpacity>
 
-      {showReview && questions.map((q, i) => {
+      {showReview ? questions.map((q, i) => {
         const ans = (attempt.answers || []).find((a) => a.questionId === q.id);
         const givenVal = ans?.value ?? "";
         const given    = String(givenVal).trim().toLowerCase();
@@ -118,24 +126,33 @@ export default function ResultScreen() {
             backgroundColor: isCorrect ? colors.successBg : colors.dangerBg,
           }]}>
             <Text style={[styles.reviewStatus, { color: isCorrect ? colors.successText : colors.dangerText }]}>
-              {isCorrect ? "✓ Correct" : "✗ Incorrect"} — Q{i+1} ({q.marks} marks)
+              {`${isCorrect ? "✓ Correct" : "✗ Incorrect"} — Q${i + 1} (${q.marks} mark${q.marks !== 1 ? "s" : ""})`}
             </Text>
             <Text style={styles.reviewQuestion}>{q.text}</Text>
             <Text style={styles.reviewAnswer}>
-              Your answer: <Text style={{ fontWeight: "700" }}>{String(givenVal) || "No answer"}</Text>
+              {"Your answer: "}
+              <Text style={{ fontWeight: "700" }}>{String(givenVal) || "No answer"}</Text>
             </Text>
-            {!isCorrect && (
+            {!isCorrect ? (
               <Text style={[styles.reviewCorrect, { color: colors.successText }]}>
-                Correct: <Text style={{ fontWeight: "700" }}>{q.correctAnswer}</Text>
+                {"Correct: "}
+                <Text style={{ fontWeight: "700" }}>{q.correctAnswer}</Text>
               </Text>
-            )}
+            ) : null}
           </View>
         );
-      })}
+      }) : null}
 
       {/* Actions */}
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.homeBtn} onPress={() => router.replace("/(student)/home")} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.homeBtn}
+          onPress={() => {
+            clearActiveFocus();
+            router.replace("/(student)/home");
+          }}
+          activeOpacity={0.85}
+        >
           <Text style={styles.homeBtnText}>← Back to My Exams</Text>
         </TouchableOpacity>
       </View>

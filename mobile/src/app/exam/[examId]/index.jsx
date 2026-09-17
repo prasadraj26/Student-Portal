@@ -4,9 +4,14 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getExamById, getQuestions } from "../../services/examService";
-import { hasSubmitted } from "../../services/attemptService";
-import { colors, radius, spacing } from "../../constants/theme";
+import { getExamById, getQuestions } from "../../../services/examService";
+import { hasSubmitted } from "../../../services/attemptService";
+import { clearActiveFocus } from "../../../utils/focusManagement";
+import * as theme from "../../../constants/theme";
+
+const colors  = theme.colors  || {};
+const radius  = theme.radius  || {};
+const spacing = theme.spacing || {};
 
 const STORAGE_KEY = "edu_portal_student_id";
 
@@ -32,6 +37,9 @@ export default function ExamInstructions() {
       finally { setLoading(false); }
     };
     load();
+    return () => {
+      clearActiveFocus();
+    };
   }, [examId]);
 
   if (loading) {
@@ -62,7 +70,7 @@ export default function ExamInstructions() {
       <View style={styles.examHeader}>
         <Text style={styles.examTitle}>{exam.title}</Text>
         <View style={styles.examMeta}>
-          {exam.subjectName && <Text style={styles.metaItem}>📚 {exam.subjectName}</Text>}
+          {Boolean(exam.subjectName) ? <Text style={styles.metaItem}>📚 {exam.subjectName}</Text> : null}
           <Text style={styles.metaItem}>🏫 {exam.className}</Text>
         </View>
       </View>
@@ -100,12 +108,12 @@ export default function ExamInstructions() {
       )}
 
       {/* Instructions */}
-      {exam.instructions && (
+      {Boolean(exam.instructions) ? (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Instructions from Teacher</Text>
           <Text style={styles.instructionText}>{exam.instructions}</Text>
         </View>
-      )}
+      ) : null}
 
       {/* Rules */}
       <View style={[styles.card, { borderColor: colors.warningBorder, backgroundColor: colors.warningBg }]}>
@@ -121,15 +129,23 @@ export default function ExamInstructions() {
       {already ? (
         <View style={styles.alreadyBox}>
           <Text style={styles.alreadyText}>You have already submitted this exam.</Text>
-          <TouchableOpacity style={[styles.btn, { backgroundColor: colors.success }]}
-            onPress={() => router.push(`/result/${already.id}`)}>
+          <TouchableOpacity
+            style={[styles.btn, { backgroundColor: colors.success }]}
+            onPress={() => {
+              clearActiveFocus();
+              router.push(`/result/${already.id}`);
+            }}
+          >
             <Text style={styles.btnText}>View My Result →</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <TouchableOpacity
           style={styles.btn}
-          onPress={() => router.push(`/exam/${examId}/take`)}
+          onPress={() => {
+            clearActiveFocus();
+            router.push(`/exam/${examId}/take`);
+          }}
           activeOpacity={0.85}
         >
           <Text style={styles.btnText}>Start Exam →</Text>

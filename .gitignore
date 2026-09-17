@@ -1,0 +1,100 @@
+# ==========================================
+# Root .gitignore for Student-Portal
+# ==========================================
+
+# ------------------------------------------
+# Environment & Secret Files
+# ------------------------------------------
+.env
+.env.*
+!.env.example
+!.env.sample
+serviceAccountKey.json
+firebase-adminsdk-*.json
+google-services.json
+GoogleService-Info.plist
+*.pem
+*.key
+*.crt
+*.p12
+*.p8
+*.keystore
+*.jks
+
+# ------------------------------------------
+# Firebase & Debug Logs
+# ------------------------------------------
+*.log
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+.firebase/
+emulator-data/
+firebase.rules
+firebase.json
+
+# ------------------------------------------
+# Dependencies & Package Managers
+# ------------------------------------------
+node_modules/
+bower_components/
+
+# ------------------------------------------
+# Build, Bundles & Distribution
+# ------------------------------------------
+dist/
+dist-ssr/
+build/
+out/
+.next/
+.nuxt/
+.output/
+web-build/
+
+# ------------------------------------------
+# Expo & Native Mobile
+# ------------------------------------------
+.expo/
+expo-env.d.ts
+/ios
+/android
+
+# ------------------------------------------
+# IDEs, Editors & AI Tooling
+# ------------------------------------------
+.vscode/
+.claude/
+.idea/
+*.swp
+*.swo
+*.iml
+.vs/
+
+# ------------------------------------------
+# OS Generated Files
+# ------------------------------------------
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ------------------------------------------
+# Temporary & Backup Files
+# ------------------------------------------
+*.bak
+*.backup
+*.tmp
+*.temp
+*.old
+*.orig
+tmp/
+temp/
+.cache/
+
+# ------------------------------------------
+# Testing & Coverage
+# ------------------------------------------
+coverage/
+.nyc_output/
+test-results/

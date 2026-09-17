@@ -7,7 +7,12 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getExamById, getQuestions } from "../../../services/examService";
 import { createAttempt, submitAttempt, updateStudentProgress } from "../../../services/attemptService";
-import { colors, radius, spacing } from "../../../constants/theme";
+import { clearActiveFocus } from "../../../utils/focusManagement";
+import * as theme from "../../../constants/theme";
+
+const colors  = theme.colors  || {};
+const radius  = theme.radius  || {};
+const spacing = theme.spacing || {};
 
 const STORAGE_KEY = "edu_portal_student_id";
 const { width: SCREEN_W } = Dimensions.get("window");
@@ -161,6 +166,9 @@ export default function TakeExamScreen() {
       }
     };
     init();
+    return () => {
+      clearActiveFocus();
+    };
   }, [examId]);
 
   const handleAutoSubmit = useCallback(() => {
@@ -181,12 +189,14 @@ export default function TakeExamScreen() {
   const unanswered    = questions.length - answeredCount;
 
   const doSubmit = async (auto = false) => {
+    clearActiveFocus();
     setSubmitting(true);
     try {
       const studentId = await AsyncStorage.getItem(STORAGE_KEY);
       const ansArray  = questions.map((q) => ({ questionId: q.id, value: answers[q.id] ?? "" }));
       const result    = await submitAttempt(attemptId, ansArray, questions, exam.totalMarks);
       await updateStudentProgress(studentId, exam.subjectId, { ...result, totalMarks: exam.totalMarks });
+      clearActiveFocus();
       router.replace(`/result/${attemptId}`);
     } catch (err) {
       Alert.alert("Submission Failed", err.message);
@@ -196,6 +206,7 @@ export default function TakeExamScreen() {
   };
 
   const handleSubmitPress = () => {
+    clearActiveFocus();
     if (unanswered > 0) { setShowModal(true); return; }
     doSubmit();
   };
@@ -270,7 +281,7 @@ export default function TakeExamScreen() {
                   isCurrent  && styles.navDotCurrent,
                   isAnswered && !isCurrent && styles.navDotAnswered,
                 ]}
-                onPress={() => setCurrentIdx(i)}
+                onPress={() => { clearActiveFocus(); setCurrentIdx(i); }}
               >
                 <Text style={[styles.navDotText,
                   isCurrent  && { color: colors.primary, fontWeight: "700" },
@@ -283,7 +294,7 @@ export default function TakeExamScreen() {
         <View style={styles.navBtns}>
           <TouchableOpacity
             style={[styles.navBtn, isFirst && styles.navBtnDisabled]}
-            onPress={() => setCurrentIdx((i) => Math.max(0, i - 1))}
+            onPress={() => { clearActiveFocus(); setCurrentIdx((i) => Math.max(0, i - 1)); }}
             disabled={isFirst}
           >
             <Text style={[styles.navBtnText, isFirst && { color: colors.textMuted }]}>‹ Prev</Text>
@@ -291,6 +302,7 @@ export default function TakeExamScreen() {
           <TouchableOpacity
             style={[styles.navBtn, isLast && styles.navBtnPrimary]}
             onPress={() => {
+              clearActiveFocus();
               if (isLast) handleSubmitPress();
               else setCurrentIdx((i) => Math.min(questions.length - 1, i + 1));
             }}
@@ -312,10 +324,10 @@ export default function TakeExamScreen() {
               unanswered question{unanswered !== 1 ? "s" : ""}. Are you sure you want to submit?
             </Text>
             <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.modalBtnSecondary} onPress={() => setShowModal(false)}>
+              <TouchableOpacity style={styles.modalBtnSecondary} onPress={() => { clearActiveFocus(); setShowModal(false); }}>
                 <Text style={styles.modalBtnSecText}>Review</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalBtnPrimary} onPress={() => { setShowModal(false); doSubmit(); }} disabled={submitting}>
+              <TouchableOpacity style={styles.modalBtnPrimary} onPress={() => { clearActiveFocus(); setShowModal(false); doSubmit(); }} disabled={submitting}>
                 <Text style={styles.modalBtnPriText}>{submitting ? "Submitting…" : "Submit Anyway"}</Text>
               </TouchableOpacity>
             </View>

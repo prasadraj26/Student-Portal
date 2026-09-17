@@ -7,35 +7,57 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getStudentAttempts, getStudentProgress } from "../../services/attemptService";
 import { getStudentById } from "../../services/studentService";
 import { getExamById } from "../../services/examService";
-import { colors, radius, spacing } from "../../constants/theme";
+import { getSubjectMap } from "../../services/subjectService";
+import * as theme from "../../constants/theme";
+
+const colors  = theme.colors  || {};
+const radius  = theme.radius  || {};
+const spacing = theme.spacing || {};
 
 const STORAGE_KEY = "edu_portal_student_id";
 
 export default function ProgressScreen() {
-  const [student,   setStudent]   = useState(null);
-  const [progress,  setProgress]  = useState(null);
-  const [history,   setHistory]   = useState([]);
-  const [loading,   setLoading]   = useState(true);
+  const [student,    setStudent]    = useState(null);
+  const [progress,   setProgress]   = useState(null);
+  const [history,    setHistory]    = useState([]);
+  const [subjectMap, setSubjectMap] = useState({});
+  const [loading,    setLoading]    = useState(true);
 
   const load = async () => {
     setLoading(true);
     try {
       const id = await AsyncStorage.getItem(STORAGE_KEY);
-      const [s, p, a] = await Promise.all([
+      const [s, p, a, sMap] = await Promise.all([
         getStudentById(id),
         getStudentProgress(id),
         getStudentAttempts(id),
+        getSubjectMap().catch(() => ({})),
       ]);
-      setStudent(s); setProgress(p);
+      setStudent(s);
+      setProgress(p);
+      setSubjectMap(sMap || {});
+
       const rich = await Promise.all(
         a.map(async (at) => {
           const exam = await getExamById(at.examId).catch(() => null);
-          return { ...at, examTitle: exam?.title, subjectName: exam?.subjectName };
+          const resolvedSubject =
+            exam?.subjectName ||
+            (exam?.subjectId ? (sMap && sMap[exam.subjectId]) : null) ||
+            null;
+          return {
+            ...at,
+            examTitle: exam?.title,
+            subjectName: resolvedSubject,
+            subjectId: exam?.subjectId || at.subjectId,
+          };
         })
       );
       setHistory(rich);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+    } catch (err) {
+      console.error("[Progress Load Error]", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useFocusEffect(useCallback(() => { load(); }, []));
@@ -51,8 +73,16 @@ export default function ProgressScreen() {
   const avg = progress?.averagePercentage ?? 0;
   const avgColor = avg >= 50 ? colors.successText : colors.dangerText;
 
+  // Build subjectData with human-readable subject names
   const subjectData = progress?.bySubject
-    ? Object.entries(progress.bySubject).map(([id, d]) => ({ id, ...d }))
+    ? Object.entries(progress.bySubject).map(([subjectId, d]) => {
+        const matchedHistory = history.find((h) => h.subjectId === subjectId);
+        const name =
+          subjectMap[subjectId] ||
+          matchedHistory?.subjectName ||
+          subjectId;
+        return { id: subjectId, name, ...d };
+      })
     : [];
 
   return (
@@ -61,19 +91,19 @@ export default function ProgressScreen() {
       <View style={styles.overviewCard}>
         <View style={styles.avatarRow}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{student?.name?.[0]?.toUpperCase()}</Text>
+            <Text style={styles.avatarText}>{student?.name?.[0]?.toUpperCase() || ""}</Text>
           </View>
           <View>
-            <Text style={styles.studentName}>{student?.name}</Text>
+            <Text style={styles.studentName}>{student?.name || ""}</Text>
             <Text style={styles.studentMeta}>
-              {student?.studentId} &middot; Class {student?.classId}
+              {`${student?.studentId || ""} · Class ${student?.className || student?.classId || ""}`}
             </Text>
           </View>
         </View>
 
         <View style={styles.statsRow}>
           {[
-            { label: "Exams Done",   value: progress?.completedExams ?? 0 },
+            { label: "Exams Done",   value: `${progress?.completedExams ?? 0}` },
             { label: "Avg. Score",   value: `${avg}%`, color: avgColor },
             { label: "Marks",        value: `${progress?.totalMarksObtained ?? 0}/${progress?.totalMarksPossible ?? 0}` },
           ].map(({ label, value, color }) => (
@@ -86,36 +116,38 @@ export default function ProgressScreen() {
       </View>
 
       {/* Subject breakdown */}
-      {subjectData.length > 0 && (
+      {subjectData.length > 0 ? (
         <>
           <Text style={styles.sectionTitle}>Subject Performance</Text>
           {subjectData.map((s) => (
             <View key={s.id} style={styles.subjectCard}>
               <View style={styles.subjectHeader}>
-                <Text style={styles.subjectName}>{s.id}</Text>
-                <Text style={[styles.subjectPct, { color: s.percentage >= 50 ? colors.successText : colors.dangerText }]}>
-                  {s.percentage}%
+                <Text style={styles.subjectName}>{s.name}</Text>
+                <Text style={[styles.subjectPct, { color: (s.percentage ?? 0) >= 50 ? colors.successText : colors.dangerText }]}>
+                  {`${s.percentage ?? 0}%`}
                 </Text>
               </View>
               <View style={styles.progressTrack}>
                 <View style={[styles.progressFill, {
-                  width: `${s.percentage}%`,
-                  backgroundColor: s.percentage >= 50 ? colors.success : colors.danger,
+                  width: `${Math.min(100, Math.max(0, s.percentage ?? 0))}%`,
+                  backgroundColor: (s.percentage ?? 0) >= 50 ? colors.success : colors.danger,
                 }]} />
               </View>
-              <Text style={styles.subjectMeta}>{s.exams} exam{s.exams !== 1 ? "s" : ""} completed</Text>
-              {s.percentage < 50 && (
+              <Text style={styles.subjectMeta}>
+                {`${s.exams} exam${s.exams !== 1 ? "s" : ""} completed`}
+              </Text>
+              {(typeof s.percentage === "number" && s.percentage < 50) ? (
                 <View style={styles.weakBadge}>
                   <Text style={styles.weakBadgeText}>⚠ Needs Improvement</Text>
                 </View>
-              )}
+              ) : null}
             </View>
           ))}
         </>
-      )}
+      ) : null}
 
       {/* Exam history */}
-      {history.length > 0 && (
+      {history.length > 0 ? (
         <>
           <Text style={styles.sectionTitle}>Exam History</Text>
           {history.map((at, i) => {
@@ -124,11 +156,13 @@ export default function ProgressScreen() {
               <View key={at.id} style={styles.historyRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.histTitle}>{at.examTitle || `Exam ${i + 1}`}</Text>
-                  {at.subjectName && <Text style={styles.histSub}>{at.subjectName}</Text>}
+                  {Boolean(at.subjectName) ? (
+                    <Text style={styles.histSub}>{at.subjectName}</Text>
+                  ) : null}
                 </View>
                 <View style={styles.histRight}>
                   <Text style={[styles.histScore, { color: pass ? colors.successText : colors.dangerText }]}>
-                    {at.percentage}%
+                    {`${at.percentage ?? 0}%`}
                   </Text>
                   <Text style={[styles.histResult, {
                     backgroundColor: pass ? colors.successBg : colors.dangerBg,
@@ -141,15 +175,15 @@ export default function ProgressScreen() {
             );
           })}
         </>
-      )}
+      ) : null}
 
-      {history.length === 0 && !loading && (
+      {(history.length === 0 && !loading) ? (
         <View style={styles.emptyBox}>
           <Text style={styles.emptyIcon}>📈</Text>
           <Text style={styles.emptyText}>No results yet</Text>
           <Text style={styles.emptyHint}>Complete some exams to see your progress here.</Text>
         </View>
-      )}
+      ) : null}
     </ScrollView>
   );
 }

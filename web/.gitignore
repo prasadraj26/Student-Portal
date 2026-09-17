@@ -26,6 +26,9 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 vite-debug.log*
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
 
 # =========================
 # Environment / Secrets
@@ -36,6 +39,7 @@ vite-debug.log*
 .env.test.local
 .env.production.local
 .env.*.local
+.env.*
 
 # Keep example environment files
 !.env.example
@@ -47,6 +51,9 @@ vite-debug.log*
 *.local
 *.tmp
 *.temp
+*.bak
+*.backup
+*.old
 tmp/
 temp/
 .cache/
@@ -54,24 +61,15 @@ temp/
 .eslintcache
 
 # =========================
-# IDE / Editors
+# IDE / Editors / AI Tools
 # =========================
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
-
+.vscode/
+.claude/
 .idea/
 *.iml
-
-# Visual Studio
 .vs/
 *.suo
 *.user
-*.userosscache
-*.sln.docstates
-*.njsproj
-*.ntvs*
-*.sw?
 
 # =========================
 # OS Generated Files
@@ -83,14 +81,10 @@ ehthumbs.db
 Desktop.ini
 
 # =========================
-# Coverage
+# Coverage & Testing
 # =========================
 coverage/
 .nyc_output/
-
-# =========================
-# Testing
-# =========================
 test-results/
 playwright-report/
 blob-report/
@@ -105,12 +99,11 @@ playwright/.cache/
 # Firebase
 # =========================
 .firebase/
-firebase-debug.log
-firestore-debug.log
-ui-debug.log
-
-# Firebase Emulator data
 emulator-data/
+serviceAccountKey.json
+firebase-adminsdk-*.json
+google-services.json
+GoogleService-Info.plist
 
 # =========================
 # Netlify / Vercel
@@ -119,28 +112,8 @@ emulator-data/
 .vercel/
 
 # =========================
-# Generated files
-# =========================
-*.generated.*
-*.bak
-*.backup
-*.old
-
-# =========================
 # Certificates / Private Keys
 # =========================
 *.pem
 *.key
 *.crt
-
-# =========================
-# Database / Local Data
-# =========================
-*.sqlite
-*.sqlite3
-*.db
-
-# =========================
-# OS / System
-# =========================
-*.orig

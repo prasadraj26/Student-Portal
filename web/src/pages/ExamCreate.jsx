@@ -66,7 +66,7 @@ export default function ExamCreate() {
     setLoading(true);
     setMessage(null);
     try {
-      const classObj   = classes.find((c) => c.id === form.classId);
+      const classObj   = classes.find((c) => c.classId === form.classId);
       const subjectObj = subjects.find((s) => s.id === form.subjectId);
       const data = {
         ...form,
@@ -128,7 +128,7 @@ export default function ExamCreate() {
                     <select className="form-control" value={form.classId} onChange={set("classId")} required>
                       <option value="">Select class…</option>
                       {classes.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name || `Grade ${c.grade} – ${c.section}`}</option>
+                        <option key={c.classId} value={c.classId}>{c.name || `${c.grade} ${c.section}`}</option>
                       ))}
                     </select>
                   </div>
@@ -198,7 +198,7 @@ export default function ExamCreate() {
               <div className="card-body" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {[
                   ["Title",    form.title || "—"],
-                  ["Class",    classes.find((c) => c.id === form.classId)?.name || "—"],
+                  ["Class",    classes.find((c) => c.classId === form.classId)?.name || "—"],
                   ["Subject",  subjects.find((s) => s.id === form.subjectId)?.name || "—"],
                   ["Duration", form.durationMinutes ? `${form.durationMinutes} min` : "—"],
                   ["Marks",    form.totalMarks ? `${form.totalMarks} pts` : "—"],

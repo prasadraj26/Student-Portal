@@ -8,6 +8,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getStudentById } from "../../services/studentService";
 import { getPublishedExamsForClass } from "../../services/examService";
 import { hasSubmitted } from "../../services/attemptService";
+import { clearActiveFocus } from "../../utils/focusManagement";
 import { colors, radius, spacing } from "../../constants/theme";
 
 const STORAGE_KEY = "edu_portal_student_id";
@@ -48,6 +49,7 @@ export default function HomeScreen() {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
       { text: "Cancel", style: "cancel" },
       { text: "Sign Out", style: "destructive", onPress: async () => {
+        clearActiveFocus();
         await AsyncStorage.removeItem(STORAGE_KEY);
         router.replace("/");
       }},
@@ -72,6 +74,7 @@ export default function HomeScreen() {
         key={exam.id}
         style={[styles.examCard, done && styles.examCardDone]}
         onPress={() => {
+          clearActiveFocus();
           if (done && attempt) {
             router.push(`/result/${attempt.id}`);
           } else {
@@ -86,11 +89,11 @@ export default function HomeScreen() {
         <View style={styles.examCardBody}>
           <Text style={styles.examTitle}>{exam.title}</Text>
           <View style={styles.examMeta}>
-            {exam.subjectName && <Text style={styles.metaChip}>📚 {exam.subjectName}</Text>}
+            {Boolean(exam.subjectName) ? <Text style={styles.metaChip}>📚 {exam.subjectName}</Text> : null}
             <Text style={styles.metaChip}>⏱ {exam.durationMinutes} min</Text>
             <Text style={styles.metaChip}>📊 {exam.totalMarks} marks</Text>
           </View>
-          {done && attempt && (
+          {Boolean(done && attempt) ? (
             <View style={styles.scoreRow}>
               <Text style={[styles.scoreText, { color: (attempt.percentage >= 40) ? colors.successText : colors.dangerText }]}>
                 Score: {attempt.score}/{attempt.totalMarks} ({attempt.percentage}%)
@@ -102,7 +105,7 @@ export default function HomeScreen() {
                 {(attempt.percentage >= 40) ? "PASS" : "FAIL"}
               </Text>
             </View>
-          )}
+          ) : null}
         </View>
         <Text style={[styles.chevron, done && { color: colors.textMuted }]}>›</Text>
       </TouchableOpacity>
@@ -115,7 +118,7 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Hello, {student?.name?.split(" ")[0]} 👋</Text>
-          <Text style={styles.studentId}>ID: {student?.studentId} &middot; Class {student?.classId}</Text>
+          <Text style={styles.studentId}>ID: {student?.studentId} &middot; Class {student?.className || student?.classId}</Text>
         </View>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
           <Text style={styles.logoutText}>Sign out</Text>

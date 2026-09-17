@@ -1,34 +1,57 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { getStudentById } from "../services/studentService";
+import { ensureAuth } from "../../firebase/config";
+import { clearActiveFocus } from "../utils/focusManagement";
 import { colors, radius, spacing } from "../constants/theme";
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const [studentId, setStudentId] = useState("");
-  const [loading,   setLoading]   = useState(false);
+  const [studentId, setStudentId]       = useState("");
+  const [loading,   setLoading]         = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    ensureAuth().catch((e) => console.warn("[Auth Init Warning]", e.message));
+  }, []);
+
+  const showAlert = (title, message) => {
+    setErrorMessage(message);
+    if (Platform.OS === "web" && typeof window !== "undefined" && window.alert) {
+      // Avoid silent Alert failure on React Native Web
+      setTimeout(() => window.alert(`${title}: ${message}`), 50);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
 
   const handleContinue = async () => {
     const id = studentId.trim().toUpperCase();
-    if (!id) { Alert.alert("Enter your Student ID", "Please type your Student ID to continue."); return; }
+    setErrorMessage("");
+    if (!id) {
+      showAlert("Enter your Student ID", "Please type your Student ID to continue.");
+      return;
+    }
     setLoading(true);
     try {
       const student = await getStudentById(id);
       if (!student) {
-        Alert.alert("Student Not Found", `No student found with ID "${id}". Please check and try again.`);
+        showAlert("Student Not Found", "Student ID not found.");
         return;
       }
       if (!student.active) {
-        Alert.alert("Account Inactive", "Your account has been deactivated. Please contact your teacher.");
+        showAlert("Account Inactive", "This student account is inactive.");
         return;
       }
+      clearActiveFocus();
       router.push({ pathname: "/confirm", params: { studentId: id } });
     } catch (e) {
-      Alert.alert("Error", "Could not connect. Please check your internet connection.");
+      console.error("[Login Error]", e);
+      showAlert("Error", "Unable to verify student. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -53,11 +76,17 @@ export default function WelcomeScreen() {
         <Text style={styles.cardTitle}>Welcome! 👋</Text>
         <Text style={styles.cardSubtitle}>Enter your Student ID to access your exams and results.</Text>
 
+        {errorMessage !== "" && (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          </View>
+        )}
+
         <Text style={styles.label}>Student ID</Text>
         <TextInput
           style={styles.input}
           value={studentId}
-          onChangeText={setStudentId}
+          onChangeText={(val) => { setStudentId(val); if (errorMessage) setErrorMessage(""); }}
           placeholder="e.g. 10A01"
           placeholderTextColor={colors.textMuted}
           autoCapitalize="characters"
@@ -114,7 +143,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25, shadowRadius: 24, elevation: 12,
   },
   cardTitle:    { fontSize: 22, fontWeight: "700", color: colors.textPrimary, marginBottom: 6, letterSpacing: -0.3 },
-  cardSubtitle: { fontSize: 14, color: colors.textMuted, marginBottom: 24, lineHeight: 20 },
+  cardSubtitle: { fontSize: 14, color: colors.textMuted, marginBottom: 20, lineHeight: 20 },
+
+  errorBox: {
+    backgroundColor: colors.dangerBg,
+    borderColor: colors.dangerBorder,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    padding: 10,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: colors.dangerText,
+    fontSize: 13,
+    fontWeight: "600",
+    textAlign: "center",
+  },
 
   label: { fontSize: 13, fontWeight: "600", color: colors.textPrimary, marginBottom: 6 },
   input: {

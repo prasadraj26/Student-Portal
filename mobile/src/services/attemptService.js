@@ -2,7 +2,7 @@ import {
   collection, doc, addDoc, getDoc, getDocs, updateDoc,
   query, where, orderBy, serverTimestamp, setDoc,
 } from "firebase/firestore";
-import { db } from "../../firebase/config";
+import { db, ensureAuth } from "../../firebase/config";
 
 const ATTEMPTS = "attempts";
 const PROGRESS = "studentProgress";
@@ -32,6 +32,7 @@ export const calculateScore = (answers, questions) => {
 
 /** Create or resume an attempt */
 export const createAttempt = async ({ studentId, examId, totalMarks }) => {
+  await ensureAuth();
   const existing = await getDocs(
     query(
       collection(db, ATTEMPTS),
@@ -54,6 +55,7 @@ export const createAttempt = async ({ studentId, examId, totalMarks }) => {
 
 /** Submit attempt with client-side scoring */
 export const submitAttempt = async (attemptId, answers, questions, totalMarks) => {
+  await ensureAuth();
   const score = calculateScore(answers, questions);
   const percentage = Math.round((score / totalMarks) * 100);
   await updateDoc(doc(db, ATTEMPTS, attemptId), {
@@ -65,24 +67,28 @@ export const submitAttempt = async (attemptId, answers, questions, totalMarks) =
 
 /** Get a student's submitted attempts */
 export const getStudentAttempts = async (studentId) => {
+  await ensureAuth();
   const q = query(
     collection(db, ATTEMPTS),
     where("studentId", "==", studentId),
-    where("status",    "==", "submitted"),
-    orderBy("submittedAt", "desc")
+    where("status",    "==", "submitted")
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.submittedAt?.seconds || 0) - (a.submittedAt?.seconds || 0));
 };
 
 /** Get a single attempt */
 export const getAttemptById = async (attemptId) => {
+  await ensureAuth();
   const snap = await getDoc(doc(db, ATTEMPTS, attemptId));
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 };
 
 /** Check if student already submitted an exam */
 export const hasSubmitted = async (studentId, examId) => {
+  await ensureAuth();
   const q = await getDocs(
     query(
       collection(db, ATTEMPTS),
@@ -96,6 +102,7 @@ export const hasSubmitted = async (studentId, examId) => {
 
 /** Update student progress after submission */
 export const updateStudentProgress = async (studentId, subjectId, result) => {
+  await ensureAuth();
   const ref  = doc(db, PROGRESS, studentId);
   const snap = await getDoc(ref);
   if (snap.exists()) {
@@ -124,6 +131,7 @@ export const updateStudentProgress = async (studentId, subjectId, result) => {
 
 /** Get student progress */
 export const getStudentProgress = async (studentId) => {
+  await ensureAuth();
   const snap = await getDoc(doc(db, PROGRESS, studentId));
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 };

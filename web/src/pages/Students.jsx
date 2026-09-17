@@ -59,7 +59,7 @@ function ConfirmModal({ student, onConfirm, onCancel, loading }) {
 function StudentModal({ mode, student, classes, onSave, onClose, loading }) {
   const isEdit = mode === "edit";
   const [name, setName]           = useState(student?.name || "");
-  const [classId, setClassId]     = useState(student?.classId || classes[0]?.id || "");
+  const [classId, setClassId]     = useState(student?.classId || classes[0]?.classId || "");
   const [rollNumber, setRollNumber] = useState(student?.rollNumber || "");
   const [error, setError]         = useState("");
 
@@ -102,7 +102,7 @@ function StudentModal({ mode, student, classes, onSave, onClose, loading }) {
                 onChange={(e) => setClassId(e.target.value)} required>
                 <option value="">Select class…</option>
                 {classes.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name || `${c.grade}${c.section}`}</option>
+                  <option key={c.classId} value={c.classId}>{c.name || `${c.grade} ${c.section}`}</option>
                 ))}
               </select>
               {classes.length === 0 && (
@@ -190,7 +190,10 @@ export default function Students() {
   const handleAdd = async ({ name, classId, rollNumber }) => {
     setActionLoading(true);
     try {
-      const id = await addStudent({ name, classId, rollNumber });
+      // Find the human-readable class name for display in the Students table
+      const selectedClass = classes.find((c) => c.classId === classId);
+      const className = selectedClass?.name || classId;
+      const id = await addStudent({ name, classId, className, rollNumber });
       showMsg("success", `Student ${id} added successfully.`);
       setModal(null);
       await load();
@@ -203,7 +206,9 @@ export default function Students() {
   const handleEdit = async ({ name, classId }) => {
     setActionLoading(true);
     try {
-      await updateStudent(selected.id, { name, classId });
+      const selectedClass = classes.find((c) => c.classId === classId);
+      const className = selectedClass?.name || classId;
+      await updateStudent(selected.studentId, { name, classId, className });
       showMsg("success", "Student updated.");
       setModal(null);
       await load();
@@ -216,7 +221,7 @@ export default function Students() {
   const handleDeactivate = async () => {
     setActionLoading(true);
     try {
-      await deactivateStudent(selected.id);
+      await deactivateStudent(selected.studentId);
       showMsg("success", `${selected.name} deactivated.`);
       setModal(null);
       await load();
@@ -228,7 +233,7 @@ export default function Students() {
   /* Reactivate */
   const handleReactivate = async (student) => {
     try {
-      await reactivateStudent(student.id);
+      await reactivateStudent(student.studentId);
       showMsg("success", `${student.name} reactivated.`);
       await load();
     } catch (e) {
@@ -275,7 +280,7 @@ export default function Students() {
         >
           <option value="">All Classes</option>
           {classes.map((c) => (
-            <option key={c.id} value={c.id}>{c.name || `${c.grade}${c.section}`}</option>
+            <option key={c.classId} value={c.classId}>{c.name || `${c.grade} ${c.section}`}</option>
           ))}
         </select>
         <select
@@ -320,7 +325,7 @@ export default function Students() {
                     </code>
                   </td>
                   <td><strong>{s.name}</strong></td>
-                  <td>{s.classId}</td>
+                  <td>{s.className || s.classId}</td>
                   <td className="text-muted">{String(s.rollNumber).padStart(2, "0")}</td>
                   <td><StatusBadge active={s.active} /></td>
                   <td>
@@ -353,7 +358,7 @@ export default function Students() {
                       )}
                       <button
                         className="btn btn-ghost btn-sm"
-                        onClick={() => navigate(`/reports/student/${s.id}`)}
+                        onClick={() => navigate(`/reports/student/${s.studentId}`)}
                         title="View Report"
                       >
                         Report

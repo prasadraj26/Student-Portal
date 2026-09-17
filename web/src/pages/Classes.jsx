@@ -26,8 +26,8 @@ function ClassModal({ mode, cls, onSave, onClose, loading }) {
     setError("");
     if (!grade.trim())   { setError("Grade is required.");   return; }
     if (!section.trim()) { setError("Section is required."); return; }
-    const name = `Grade ${grade} – ${section.toUpperCase()}`;
-    try { await onSave({ name, grade: grade.trim(), section: section.trim() }); }
+    // name and classId are derived inside classService — only pass grade/section
+    try { await onSave({ grade: grade.trim(), section: section.trim() }); }
     catch (err) { setError(err.message); }
   };
 
@@ -97,6 +97,7 @@ export default function Classes() {
     setTimeout(() => setMessage(null), 4000);
   };
 
+  // Compare against c.classId (the deterministic "10A"-style ID), not c.id
   const studentCount = (classId) =>
     students.filter((s) => s.classId === classId && s.active).length;
 
@@ -113,7 +114,8 @@ export default function Classes() {
   const handleEdit = async (data) => {
     setActLoad(true);
     try {
-      await updateClass(selected.id, data);
+      // Use selected.classId (deterministic "10A"-style), not selected.id (Firestore doc ID)
+      await updateClass(selected.classId, data);
       showMsg("success", "Class updated.");
       setModal(null);
       await load();
@@ -122,8 +124,9 @@ export default function Classes() {
 
   const handleToggle = async (cls) => {
     try {
-      if (cls.active) await deactivateClass(cls.id);
-      else await reactivateClass(cls.id);
+      // Use cls.classId (deterministic "10A"-style), not cls.id (Firestore doc ID)
+      if (cls.active) await deactivateClass(cls.classId);
+      else await reactivateClass(cls.classId);
       showMsg("success", cls.active ? `${cls.name} deactivated.` : `${cls.name} reactivated.`);
       await load();
     } catch (e) { showMsg("error", e.message); }
@@ -176,7 +179,7 @@ export default function Classes() {
                   <td>{c.section}</td>
                   <td>
                     <span style={{ fontWeight: 600, color: "var(--primary)" }}>
-                      {studentCount(`${c.grade}${c.section}`)}
+                      {studentCount(c.classId)}
                     </span>
                     <span className="text-muted" style={{ fontSize: 11 }}> students</span>
                   </td>

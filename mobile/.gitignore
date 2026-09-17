@@ -9,6 +9,11 @@ dist/
 web-build/
 expo-env.d.ts
 
+# IDEs, Editors & AI Tooling
+.vscode/
+.claude/
+.idea/
+
 # Native
 .kotlin/
 *.orig.*
@@ -21,20 +26,36 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
-# debug
+# debug & logs
+*.log
+firebase-debug.log*
+firestore-debug.log*
 npm-debug.*
 yarn-debug.*
 yarn-error.*
 
-# macOS
+# macOS & OS
 .DS_Store
+Thumbs.db
 *.pem
 
 # local env files
+.env
 .env*.local
+.env.*
+
+# Firebase config with secrets
+firebase/config.js
 
 # typescript
 *.tsbuildinfo
+
+# backups & temporary files
+*.bak
+*.backup
+*.tmp
+*.temp
+*.old
 
 example
 

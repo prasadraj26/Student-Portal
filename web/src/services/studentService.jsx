@@ -13,7 +13,7 @@ export const generateStudentId = (classId, rollNumber) =>
   `${classId}${String(rollNumber).padStart(2, "0")}`;
 
 /** Add a new student */
-export const addStudent = async ({ name, classId, rollNumber }) => {
+export const addStudent = async ({ name, classId, className, rollNumber }) => {
   const studentId = generateStudentId(classId, rollNumber);
   const ref = doc(db, COL, studentId);
   const snap = await getDoc(ref);
@@ -22,6 +22,7 @@ export const addStudent = async ({ name, classId, rollNumber }) => {
     studentId,
     name: name.trim(),
     classId,
+    className: className || classId,   // human-readable e.g. "10 A"
     rollNumber: Number(rollNumber),
     active: true,
     createdAt: serverTimestamp(),
